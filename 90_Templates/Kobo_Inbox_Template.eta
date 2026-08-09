@@ -8,15 +8,15 @@ tags:
 
 # <%= it.bookDetails.title %>
 
-<% it.chapters.forEach(function(chapter) { %>
-## <%= chapter.title %>
+<% it.chapters.forEach(([chapterName, highlights]) => { -%>
+## <%= chapterName.trim() %>
 
-<% chapter.highlights.forEach(function(highlight) { %>
+<% highlights.forEach((highlight) => { -%>
 > <%= highlight.text %>
 > %%kobo-id:<%= highlight.bookmarkId %>%%
-<% if (highlight.note) { %>
+<% if (highlight.note) { -%>
 > 💭 <%= highlight.note %>
-<% } %>
+<% } -%>
 
-<% }) %>
+<% }) -%>
 <% }) %>
