@@ -2,6 +2,12 @@
 
 以 Obsidian 為核心的個人知識管理 Vault：Kobo 劃線（蒐集）→ 費曼內化（轉譯）→ 雙向連結（連結）→ 主題輸出（創造）。
 
+## 0. 開啟 Vault（在安裝外掛之前）
+
+1. 在 Obsidian 啟動畫面選擇「Open folder as vault」，選取 `ReadGraph/` 這個資料夾
+2. 進入「設定 → Community plugins」，如果看到「Restricted Mode」（安全模式）是開啟的，先關閉它——安全模式關閉前無法瀏覽或安裝任何外掛
+3. 安裝完下面三個外掛後，記得個別把它們切換成「已啟用」（Obsidian 安裝外掛後預設不會自動啟用）
+
 ## 1. 需要安裝的 Community Plugins
 
 在 Obsidian「設定 → Community plugins」搜尋並安裝以下三個外掛：
@@ -24,7 +30,7 @@
 ### 2.2 Templater
 
 - 範本資料夾設定為 `90_Templates`
-- 在「Hotkeys」設定裡，把「Templater: Create new note from template」綁一組快捷鍵（建議 `Ctrl+Alt+F`），選擇範本時指向 `Feynman_Zettel_Template.md`，輸出資料夾為 `01_Cards`
+- 在「Hotkeys」設定裡，把「Templater: Create new note from template」綁一組快捷鍵（建議 `Ctrl+Alt+F`），選擇範本時指向 `Feynman_Zettel_Template.md`；範本本身會自動把新筆記移動到 `01_Cards`，不需要另外設定輸出資料夾
 
 ### 2.3 Dataview
 
@@ -35,10 +41,10 @@
 因為 Kobo Highlights Importer 官方文件沒有明確保證「重複匯入時是否會覆蓋既有筆記／`kobo-id` 是否維持穩定」，正式依賴這套系統前，先做一次測試：
 
 1. 把 Kobo 用 USB 接上電腦，在 Obsidian 執行一次 Kobo Highlights Importer 同步。
-2. 打開 `00_Inbox` 裡任一本書的筆記，確認每條劃線後方都出現一行 `%%kobo-id:數字%%`（在編輯模式看得到，閱讀模式會隱藏，這是正常的）。
+2. 打開 `00_Inbox` 裡任一本書的筆記，確認每條劃線後方都出現一行 `%%kobo-id:編號%%`（在編輯模式看得到，閱讀模式會隱藏，這是正常的）。
 3. 不要改動任何 `00_Inbox` 裡的檔案，直接再執行一次同步。
 4. 再次打開同一本書的筆記，確認：
-   - 同一條劃線的 `kobo-id` 數字**跟第一次完全相同**
+   - 同一條劃線的 `kobo-id` 編號**跟第一次完全相同**
    - 沒有同一條劃線被重複貼兩次
 
 **結果 A（通過）**：不用做任何事，`99_Dashboard.md` 裡的「方案 A」查詢直接可用。
@@ -58,7 +64,7 @@
 
 - `00_Inbox/`：Kobo 原始劃線，**唯讀**，外掛每次同步都可能整份重寫，不要在這裡手動編輯任何內容
 - `01_Cards/`：費曼內化後的原子卡片，檔名＝中文概念名稱
-- `02_MOC/`：主題地圖，複製 `投資心態地圖 MOC.md` 當範本建立新主題
+- `02_MOC/`：主題地圖，複製 `投資心態 MOC.md` 當範本建立新主題；**MOC 檔名必須完全等於「標籤名稱 + 空格 + MOC.md」**（例如標籤 `投資心態` 對應 `投資心態 MOC.md`），否則費曼卡片自動產生的 `[[<標籤> MOC]]` 反向連結會連不上
 - `03_Output/`：文章大綱／專案整理成果
 - `90_Templates/`：Templater 與 Kobo 匯入的範本檔案
 - `99_Dashboard.md`：首頁儀表板，待內化清單

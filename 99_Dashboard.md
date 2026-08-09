@@ -2,7 +2,7 @@
 
 ## 待內化清單（方案 A：kobo-id 精確比對，預設啟用）
 
-> 若安裝時的安全測試（見 README 第 4 節）失敗，請刪除下方這個程式碼區塊，並把「方案 B」的 HTML 註解拿掉來啟用它。
+> 若安裝時的安全測試（見 README「首次使用：安全測試 SOP」章節）失敗，請刪除下方這個程式碼區塊，並把「方案 B」的 HTML 註解拿掉來啟用它。
 
 ```dataviewjs
 const cardIds = new Set(
@@ -12,7 +12,7 @@ const cardIds = new Set(
 let pending = [];
 for (let file of dv.pages('"00_Inbox"').file) {
   const content = await dv.io.load(file.path);
-  const regex = /^>\s*(.+)\n>\s*%%kobo-id:(\d+)%%/gm;
+  const regex = /^>[ \t]*(.+?)\r?\n>[ \t]*%%kobo-id:([^\s%]+)%%/gm;
   let m;
   while ((m = regex.exec(content)) !== null) {
     const [, text, id] = m;

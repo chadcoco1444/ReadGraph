@@ -1,13 +1,13 @@
 <%*
 const concept = await tp.system.prompt("概念名稱（將作為檔名）");
-await tp.file.rename(concept);
+await tp.file.move("01_Cards/" + concept);
 const bookNote = await tp.system.suggester(
   (f) => f.basename,
   app.vault.getMarkdownFiles().filter(f => f.path.startsWith("00_Inbox/"))
 );
-const koboId = await tp.system.prompt("貼上該劃線的 kobo-id 數字");
+const koboId = await tp.system.prompt("貼上該劃線的 kobo-id 編號");
 const quote = await tp.system.prompt("貼上劃線原文");
-const excerpt = quote.slice(0, 60);
+const excerpt = quote.slice(0, 60).replace(/"/g, "'").replace(/\r?\n/g, " ");
 const tag = await tp.system.prompt("主題標籤（不含 #）");
 -%>
 ---
