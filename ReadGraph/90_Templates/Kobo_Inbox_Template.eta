@@ -1,0 +1,22 @@
+---
+title: "<%= it.bookDetails.title %>"
+author: <%= it.bookDetails.author %>
+dateLastRead: <%= it.bookDetails.dateLastRead?.toISOString() ?? '' %>
+tags:
+  - kobo/inbox
+---
+
+# <%= it.bookDetails.title %>
+
+<% it.chapters.forEach(function(chapter) { %>
+## <%= chapter.title %>
+
+<% chapter.highlights.forEach(function(highlight) { %>
+> <%= highlight.text %>
+> %%kobo-id:<%= highlight.bookmarkId %>%%
+<% if (highlight.note) { %>
+> 💭 <%= highlight.note %>
+<% } %>
+
+<% }) %>
+<% }) %>
