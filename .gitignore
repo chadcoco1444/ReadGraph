@@ -1,1 +1,4 @@
 .obsidian/
+.env
+00_Inbox/*
+!00_Inbox/.gitkeep
