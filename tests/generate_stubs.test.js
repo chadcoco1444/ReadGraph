@@ -1,5 +1,6 @@
 const assert = require("assert");
-const generateStubs = require("./generate_stubs.js");
+const generateStubs = require("../90_Templates/scripts/generate_stubs.js");
+const realStubLogic = require("../90_Templates/scripts/stub_logic.js");
 
 function makeFakeFile(path) {
   const basename = path.split("/").pop().replace(/\.md$/, "");
@@ -29,7 +30,7 @@ async function test(name, fn) {
           f === cardFile ? { frontmatter: { source_id: "existing-1" } } : { frontmatter: {} },
       },
     };
-    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" } };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
     const notices = [];
     const result = await generateStubs(tp, { notify: (m) => notices.push(m) });
     assert.strictEqual(result.created, 0);
@@ -58,7 +59,7 @@ async function test(name, fn) {
       },
       metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
     };
-    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" } };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
     const fakeFetch = async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: "投資心態" } }] }),
@@ -101,7 +102,7 @@ async function test(name, fn) {
       },
       metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
     };
-    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" } };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
     const fakeFetch = async () => {
       throw new Error("network down");
     };
@@ -136,7 +137,7 @@ async function test(name, fn) {
       },
       metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
     };
-    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" } };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
     const fakeFetch = async () => {
       throw new Error("不應該呼叫 fetch");
     };
@@ -148,6 +149,65 @@ async function test(name, fn) {
     assert.strictEqual(result.fallback, 1);
     assert.strictEqual(created.length, 1);
     assert.ok(created[0].content.includes("- 未分類"));
+  });
+
+  await test("建卡失敗時不中斷整批次，failed 計數正確累加", async () => {
+    const inboxFile = makeFakeFile("00_Inbox/書A.md");
+    const fakeAdapter = {
+      read: async (path) => {
+        if (path === ".env") throw new Error("ENOENT");
+        if (path === "90_Templates/scripts/tag_vocabulary.json") return "[]";
+        throw new Error("unexpected read: " + path);
+      },
+      exists: async (path) => path === "90_Templates/scripts/tag_vocabulary.json",
+      write: async () => {},
+    };
+    const fakeApp = {
+      vault: {
+        getMarkdownFiles: () => [inboxFile],
+        read: async () => "> A\n> %%kobo-id:1%%\n\n> B\n> %%kobo-id:2%%\n",
+        create: async (path) => {
+          if (path.includes("A")) throw new Error("模擬建卡失敗");
+        },
+      },
+      metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
+    };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
+    const result = await generateStubs(tp, { adapter: fakeAdapter, fetch: async () => { throw new Error("n/a"); }, notify: () => {} });
+    assert.strictEqual(result.failed, 1);
+    assert.strictEqual(result.created, 1);
+  });
+
+  await test("超過批次上限時只處理前 50 條並在通知中註明剩餘數量", async () => {
+    const lines = [];
+    for (let i = 0; i < 60; i++) {
+      lines.push(`> 劃線${i}\n> %%kobo-id:id-${i}%%`);
+    }
+    const inboxFile = makeFakeFile("00_Inbox/書A.md");
+    const created = [];
+    const fakeAdapter = {
+      read: async (path) => {
+        if (path === ".env") throw new Error("ENOENT");
+        if (path === "90_Templates/scripts/tag_vocabulary.json") return "[]";
+        throw new Error("unexpected read: " + path);
+      },
+      exists: async (path) => path === "90_Templates/scripts/tag_vocabulary.json",
+      write: async () => {},
+    };
+    const fakeApp = {
+      vault: {
+        getMarkdownFiles: () => [inboxFile],
+        read: async () => lines.join("\n\n"),
+        create: async (path, content) => created.push({ path, content }),
+      },
+      metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
+    };
+    const tp = { app: fakeApp, date: { now: () => "2026-08-10 00:00" }, user: { stub_logic: realStubLogic } };
+    const notices = [];
+    const result = await generateStubs(tp, { adapter: fakeAdapter, fetch: async () => { throw new Error("n/a"); }, notify: (m) => notices.push(m) });
+    assert.strictEqual(result.created, 50);
+    assert.strictEqual(created.length, 50);
+    assert.ok(notices[0].includes("還有 10 條待下次處理"));
   });
 
   console.log("\n全部 generate_stubs.js 測試通過。");

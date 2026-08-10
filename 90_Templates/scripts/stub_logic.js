@@ -15,19 +15,20 @@ function parseInboxHighlights(fileContent) {
 
 function findPendingHighlights(inboxFiles, existingSourceIds) {
   const pending = [];
+  const seenInBatch = new Set();
   for (const file of inboxFiles) {
     const highlights = parseInboxHighlights(file.content);
     for (const h of highlights) {
-      if (!existingSourceIds.has(h.koboId)) {
-        pending.push({ bookBasename: file.basename, quote: h.quote, koboId: h.koboId });
-      }
+      if (existingSourceIds.has(h.koboId) || seenInBatch.has(h.koboId)) continue;
+      seenInBatch.add(h.koboId);
+      pending.push({ bookBasename: file.basename, quote: h.quote, koboId: h.koboId });
     }
   }
   return pending;
 }
 
 function sanitizeStubFilename(highlightText, existingFilenames) {
-  const illegal = /[\\/:*?"<>|]/g;
+  const illegal = /[\\/:*?"<>|#^\[\]]/g;
   let base = highlightText.slice(0, 20).replace(illegal, "").trim();
   if (!base) base = "劃線";
   const existing = new Set(existingFilenames);
@@ -68,15 +69,19 @@ function parseGrokTagFromResponse(responseJson) {
   if (typeof content !== "string" || content.trim() === "") {
     throw new Error("Grok 回應內容無法解析出標籤文字");
   }
-  return content
+  const tag = content
     .trim()
     .replace(/^#/, "")
-    .replace(/["'。.\n]/g, "")
+    .replace(/["'。.\r\n]/g, "")
     .trim();
+  if (tag.length === 0 || tag.length > 12 || /[:\[\]|#^]/.test(tag)) {
+    throw new Error("Grok 回傳的標籤格式不安全或過長，長度=" + tag.length);
+  }
+  return tag;
 }
 
 function buildStubFrontmatter({ bookBasename, koboId, quote, tag, dateIso }) {
-  const excerpt = quote.slice(0, 60).replace(/"/g, "'").replace(/\r?\n/g, " ");
+  const excerpt = quote.slice(0, 60).replace(/["\\]/g, "").replace(/\r?\n/g, " ");
   return `---
 type: feynman-card
 status: stub
@@ -113,8 +118,6 @@ tags:
 }
 
 module.exports = {
-  HIGHLIGHT_REGEX_SOURCE,
-  GROK_MODEL,
   parseInboxHighlights,
   findPendingHighlights,
   sanitizeStubFilename,

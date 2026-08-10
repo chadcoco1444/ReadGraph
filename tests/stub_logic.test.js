@@ -6,7 +6,7 @@ const {
   buildGrokRequestBody,
   parseGrokTagFromResponse,
   buildStubFrontmatter,
-} = require("./stub_logic.js");
+} = require("../90_Templates/scripts/stub_logic.js");
 
 function test(name, fn) {
   fn();
@@ -43,10 +43,20 @@ test("findPendingHighlights: 已有卡片的 kobo-id 被排除，只留下待處
   assert.strictEqual(pending[0].bookBasename, "書A");
 });
 
+test("findPendingHighlights: 同一批次內重複出現的 kobo-id 只保留第一次", () => {
+  const inboxFiles = [
+    { basename: "書A", content: `> 重複劃線\n> %%kobo-id:dup-1%%\n` },
+    { basename: "書B", content: `> 重複劃線\n> %%kobo-id:dup-1%%\n` },
+  ];
+  const pending = findPendingHighlights(inboxFiles, new Set());
+  assert.strictEqual(pending.length, 1);
+  assert.strictEqual(pending[0].bookBasename, "書A");
+});
+
 test("sanitizeStubFilename: 截斷長度並清掉不合法字元", () => {
   const name = sanitizeStubFilename('這是一段包含"引號"與/斜線與\\反斜線的很長很長的劃線內容標題文字', []);
   assert.ok(name.length <= 20);
-  assert.ok(!/[\\/:*?"<>|]/.test(name));
+  assert.ok(!/[\\/:*?"<>|#^\[\]]/.test(name));
 });
 
 test("sanitizeStubFilename: 檔名衝突時自動加序號", () => {
@@ -54,6 +64,11 @@ test("sanitizeStubFilename: 檔名衝突時自動加序號", () => {
   const name2 = sanitizeStubFilename("重複的劃線內容", [name1]);
   assert.notStrictEqual(name1, name2);
   assert.ok(name2.includes(name1));
+});
+
+test("sanitizeStubFilename: 排除會破壞 wikilink 的字元", () => {
+  const name = sanitizeStubFilename("包含#井字號與^插入符號與[中括號]的內容", []);
+  assert.ok(!/[#^\[\]]/.test(name));
 });
 
 test("buildGrokRequestBody: 包含劃線內容與既有標籤詞庫", () => {
@@ -84,6 +99,16 @@ test("parseGrokTagFromResponse: 回應格式不對時丟出錯誤", () => {
   assert.throws(() => parseGrokTagFromResponse({ choices: [] }));
 });
 
+test("parseGrokTagFromResponse: 標籤過長時丟出錯誤", () => {
+  const response = { choices: [{ message: { content: "這是一個非常非常非常長的標籤文字超過限制" } }] };
+  assert.throws(() => parseGrokTagFromResponse(response));
+});
+
+test("parseGrokTagFromResponse: 標籤包含危險字元時丟出錯誤", () => {
+  assert.throws(() => parseGrokTagFromResponse({ choices: [{ message: { content: "投資:心態" } }] }));
+  assert.throws(() => parseGrokTagFromResponse({ choices: [{ message: { content: "[[投資心態]]" } }] }));
+});
+
 test("buildStubFrontmatter: 產生的內容包含所有必要欄位", () => {
   const md = buildStubFrontmatter({
     bookBasename: "致富心態",
@@ -99,6 +124,17 @@ test("buildStubFrontmatter: 產生的內容包含所有必要欄位", () => {
   assert.ok(md.includes("  - 投資心態"));
   assert.ok(md.includes("[[投資心態 MOC]]"));
   assert.ok(md.includes("> 測試劃線內容"));
+});
+
+test("buildStubFrontmatter: 劃線原文含反斜線時不會破壞 YAML", () => {
+  const md = buildStubFrontmatter({
+    bookBasename: "書",
+    koboId: "1",
+    quote: '含反斜線\\與引號"的內容',
+    tag: "測試",
+    dateIso: "2026-08-10 00:00",
+  });
+  assert.ok(!md.includes('source_quote: "含反斜線\\'));
 });
 
 console.log("\n全部 stub_logic.js 測試通過。");
