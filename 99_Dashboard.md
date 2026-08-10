@@ -44,3 +44,12 @@ for (let file of dv.pages('"00_Inbox"').file) {
 dv.table(["書籍", "劃線內容"], pending);
 ```
 -->
+
+## 已建骨架、尚未費曼轉譯
+
+```dataview
+TABLE source AS "來源書籍", tags AS "標籤"
+FROM "01_Cards"
+WHERE status = "stub"
+SORT date DESC
+```
