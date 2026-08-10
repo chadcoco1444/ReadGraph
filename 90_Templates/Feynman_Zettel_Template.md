@@ -12,6 +12,7 @@ const tag = await tp.system.prompt("主題標籤（不含 #）");
 -%>
 ---
 type: feynman-card
+status: stub
 source: "[[<%* tR += bookNote.basename %>]]"
 source_id: <%* tR += koboId %>
 source_quote: "<%* tR += excerpt %>"
